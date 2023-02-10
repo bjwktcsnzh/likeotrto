@@ -179,12 +179,6 @@
             window.location.reload()
         }
 
-        function _scrolldown() {
-            setTimeout(() => {
-                document.querySelector('html').scrollTop = 999999999;
-            }, 10);
-        }
-
         new Vue({
             el: '#app',
             vuetify: new Vuetify(),
@@ -203,6 +197,11 @@
                 },
             },
             methods: {
+                scrolldown(){
+                    this.$nextTick(()=>{
+                        document.querySelector('html').scrollTop = 999999999;
+                    })
+                },
                 yyyymmddhhmmss: function (tiemstamp) {
                     function pad2(n) { return n < 10 ? '0' + n : n }
 
@@ -237,7 +236,7 @@
                         is_self: true,
                     })
                     this.text_to_send = ""
-                    _scrolldown()
+                    this.scrolldown()
                 },
                 receive_msg: function (data) {
                     let d = JSON.parse(data)
@@ -245,7 +244,7 @@
                         this.ack_list.push(d.ack)
                     } else {
                         this.messages.push(d)
-                        _scrolldown()
+                        this.scrolldown()
                         if (d.time) {
                             this.connection.send(JSON.stringify({
                                 ack: d.time
@@ -294,7 +293,7 @@
                             is_sys: true,
                             text: "对方失去了连接"
                         })
-                        _scrolldown()
+                        this.scrolldown()
                     })
                 })
                 peer.on('error', error => {
@@ -333,7 +332,7 @@
                                 is_sys: true,
                                 text: "对方失去了连接"
                             })
-                            _scrolldown()
+                            this.scrolldown()
                         })
                     })
                 }
