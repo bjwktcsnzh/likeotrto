@@ -2,13 +2,15 @@
 <html>
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
     <meta charset="utf-8">
     <meta http-equiv="Content-Language" content="zh-cn">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
     <link type="image/png" sizes="16x16" rel="icon" href="./icons8-mouse-face-16.png">
-    <style lang="scss" scoped>
+    <title>点对点聊天</title>
+    <style>
         .messages {
             position: relative;
 
@@ -94,8 +96,12 @@
             font-weight: 400;
             letter-spacing: 0.025em;
         }
+
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
     </style>
-    <title>点对点聊天</title>
 </head>
 
 <body>
@@ -111,7 +117,8 @@
                         <v-card>
                             <v-card-text>{{shared_link}}</v-card-text>
                             <v-card-actions>
-                                <v-btn @click="navigator.clipboard.writeText(shared_link)">复制</v-btn>
+                                <v-btn v-if="navigator.clipboard"
+                                    @click="navigator.clipboard.writeText(shared_link)">复制</v-btn>
                                 <v-btn v-if="['127.0.0.1','localhost'].includes(window.location.hostname)"
                                     @click="window.open(shared_link)">
                                     新标签页打开链接
@@ -139,17 +146,18 @@
                                         <div v-if="ack_list.includes(m.time)" style="color:green">
                                             已收到
                                         </div>
-                                        <div v-else>
-                                            未收到...
+                                        <div v-else>未收到...
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
-
+                        <div id="end_of_messages">
+                            <!-- scrollIntoView on this element -->
+                        </div>
                         <div class="inputdiv">
-                            <input placeholder="输入消息" v-model="text_to_send" />
+                            <v-icon @click="print_sdp_info">mdi-antenna</v-icon>
+                            <input placeholder="输入消息" v-model="text_to_send" style="margin-left:5px;" />
                             <v-btn @click="send_text">发送</v-btn>
                         </div>
                     </div>
@@ -199,9 +207,7 @@
             methods: {
                 scrolldown() {
                     this.$nextTick(() => {
-                        setTimeout(() => {
-                            document.querySelector('html').scrollTop = 999999999;
-                        }, 100);
+                        document.getElementById('end_of_messages').scrollIntoView()
                     })
                 },
                 yyyymmddhhmmss: function (tiemstamp) {
@@ -230,8 +236,6 @@
                     }
                     if (this.connection) {
                         this.connection.send(JSON.stringify(msg))
-                    } else {
-                        console.error("missing this.connection", this.connection)
                     }
                     this.messages.push({
                         ...msg,
@@ -253,6 +257,16 @@
                             }))
                         }
                     }
+                },
+                print_sdp_info: function () {
+                    let conn = this.connection
+                    this.messages.push({
+                        is_sys: true,
+                        text: "连接信息:\n\n【currentLocalDescription】\n"
+                            + conn.peerConnection.currentLocalDescription.sdp
+                            + "\n\n【currentRemoteDescription】\n"
+                            + conn.peerConnection.currentRemoteDescription.sdp
+                    })
                 }
             },
             created: function () {
@@ -279,13 +293,6 @@
                             text: "对方已连接"
                         })
                         console.log("peer open and on connection", conn)
-                        this.messages.push({
-                            is_sys: true,
-                            text: "连接信息:\n\ncurrentLocalDescription\n"
-                                + conn.peerConnection.currentLocalDescription.sdp
-                                + "\n\ncurrentRemoteDescription\n"
-                                + conn.peerConnection.currentRemoteDescription.sdp
-                        })
                     })
                     conn.on("data", (data) => {
                         this.receive_msg(data)
@@ -318,13 +325,6 @@
                                 text: "已连接至对方"
                             })
                             console.log("peer open and connect to", remote_conn)
-                            this.messages.push({
-                                is_sys: true,
-                                text: "连接信息:\n\ncurrentLocalDescription\n"
-                                    + remote_conn.peerConnection.currentLocalDescription.sdp
-                                    + "\n\ncurrentRemoteDescription\n"
-                                    + remote_conn.peerConnection.currentRemoteDescription.sdp
-                            })
                         })
                         remote_conn.on("data", (data) => {
                             this.receive_msg(data)
