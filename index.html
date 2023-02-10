@@ -197,9 +197,11 @@
                 },
             },
             methods: {
-                scrolldown(){
-                    this.$nextTick(()=>{
-                        document.querySelector('html').scrollTop = 999999999;
+                scrolldown() {
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            document.querySelector('html').scrollTop = 999999999;
+                        }, 100);
                     })
                 },
                 yyyymmddhhmmss: function (tiemstamp) {
