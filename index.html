@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Language" content="zh-cn">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link type="image/png" sizes="16x16" rel="icon" href="./icons8-mouse-face-16.png">
+    <style lang="scss" scoped>
+        /* input {
+            font-family: inherit;
+            width: 100%;
+            border: 0;
+            border-bottom: 2px solid gray;
+            outline: 0;
+            font-size: 1.3rem;
+            padding: 7px 0;
+            background: transparent;
+            transition: border-color 0.2s;
+        } */
+
+        .messages {
+            position: relative;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+
+            box-sizing: border-box;
+            border-radius: 1rem;
+
+            background: white;
+            box-shadow: 0 0 8rem 0 rgba(black, 0.1), 0rem 2rem 4rem -3rem rgba(black, 0.5);
+
+            padding-bottom: 60px;
+        }
+
+        .sysmsg {
+            font-size: 0.8rem;
+            background: gainsboro;
+            padding: 0.25rem 1rem;
+            border-radius: 2rem;
+            color: grey;
+            width: fit-content;
+            margin: 0px auto 4px auto;
+        }
+
+        .mymsg {
+            margin: 1rem 1rem 1rem auto;
+            border-radius: 1.125rem 1.125rem 0 1.125rem;
+            background: pink;
+        }
+
+        .othermsg {
+            margin: 1rem auto 1rem 1rem;
+            border-radius: 1.125rem 1.125rem 1.125rem 0;
+            background: wheat;
+        }
+
+        .message {
+            box-sizing: border-box;
+            padding: 0.5rem 1rem;
+
+            min-height: 2.25rem;
+            width: fit-content;
+            max-width: 66%;
+
+            box-shadow:
+                0 0 2rem rgba(black, 0.075),
+                0rem 1rem 1rem -1rem rgba(black, 0.1);
+        }
+
+        .inputdiv {
+            position: fixed;
+            bottom: 0px;
+            right: 0px;
+            left: 0px;
+            z-index: 10000;
+            background-color: oldlace;
+            box-sizing: border-box;
+            flex-basis: 4rem;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+        }
+
+        input {
+            border: none;
+            background-image: none;
+            background-color: white;
+            padding: 0.5rem 1rem;
+            margin-right: 1rem;
+            border-radius: 1.125rem;
+            flex-grow: 2;
+            box-shadow: 0 0 1rem rgba(black, 0.1), 0rem 1rem 1rem -1rem rgba(black, 0.2);
+
+            font-family: Red hat Display, sans-serif;
+            font-weight: 400;
+            letter-spacing: 0.025em;
+        }
+    </style>
+    <title>点对点聊天</title>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-main>
+                <v-container>
+                    <div v-if="page=='loading'">
+                        Loading...
+                    </div>
+                    <div v-else-if="page=='index'">
+                        <p>要开始聊天，只需将以下链接发送给对方：</p>
+                        <v-card>
+                            <v-card-text>{{shared_link}}</v-card-text>
+                            <v-card-actions>
+                                <v-btn @click="navigator.clipboard.writeText(shared_link)">复制</v-btn>
+                                <v-btn v-if="['127.0.0.1','localhost'].includes(window.location.hostname)"
+                                    @click="window.open(shared_link)">
+                                    新标签页打开链接
+                                </v-btn>
+                            </v-card-actions>
+                        </v-card>
+                        <p style="margin-top: 20px">然后留在该页面等待对方连接。</p>
+                    </div>
+                    <div v-else-if="page=='error_conn'">
+                        <p>无法连接到对方！</p>
+                        <p>{{error_text}}</p>
+                        <v-btn @click="window.location.hash=''">返回首页</v-btn>
+                    </div>
+                    <div v-else-if="page=='message'" class="messages">
+                        <!-- copy from : https://codepen.io/mubangadv/pen/rXrOQa -->
+                        <div v-for="m in messages">
+                            <div v-if="m.is_sys" class="sysmsg">
+                                <pre>{{m.text}}</pre>
+                            </div>
+                            <div v-else :class="m.is_self?'mymsg':'othermsg'" class="message">
+                                {{m.text}}
+                            </div>
+                        </div>
+
+                        <div class="inputdiv">
+                            <input placeholder="输入消息" v-model="text_to_send" />
+                            <v-btn @click="send_text">发送</v-btn>
+                        </div>
+                    </div>
+                </v-container>
+                <v-footer v-if="page!='message'">
+                    <v-col>
+                        <p>
+                            本站是一个p2p聊天站。
+                            模仿自<a target="_blank" href="https://otr.to">otr.to</a>。
+                        </p>
+                        <p>
+                            <a target="_blank" href="https://icons8.com/icon/xfQtD9d6tTMU/mouse-face">Mouse Face</a>
+                            icon by
+                            <a target="_blank" href="https://icons8.com">Icons8</a>
+                        </p>
+                    </v-col>
+                </v-footer>
+            </v-main>
+        </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
+        window.onhashchange = function () {
+            window.location.reload()
+        }
+
+        function _scrolldown() {
+            setTimeout(() => {
+                document.querySelector('html').scrollTop = 999999999;
+            }, 10);
+        }
+
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data: {
+                page: "loading", // "loading" | "index" | "message" | "error_conn"
+                peerid: "",
+                text_to_send: "",
+                error_text: "",
+                messages: [],
+                connection: null,
+            },
+            computed: {
+                shared_link: function () {
+                    return window.location.origin + window.location.pathname + "#" + this.peerid
+                },
+            },
+            methods: {
+                send_text: function () {
+                    if (!this.text_to_send) {
+                        return
+                    }
+                    let msg = {
+                        text: this.text_to_send
+                    }
+                    this.connection.send(JSON.stringify(msg))
+                    this.messages.push({
+                        ...msg,
+                        is_self: true,
+                    })
+                    this.text_to_send = ""
+                    _scrolldown()
+                },
+                receive_msg: function (data) {
+                    this.messages.push(JSON.parse(data))
+                    _scrolldown()
+                }
+            },
+            created: function () {
+                if (!window.location.hash) {
+                    this.page = "index"
+                }
+                let peerid = Math.random().toString(36).substring(2, 12) + "likeotrto"
+                this.peerid = peerid
+                let peer = new Peer(peerid, {
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:42.192.138.156:3478' },
+                            { urls: 'turn:42.192.138.156:3478', username: "likeotrto", credential: "otrtolike" },
+                        ]
+                    }
+                });
+                // Receive
+                peer.on("connection", conn => {
+                    this.connection = conn
+                    conn.on("open", () => {
+                        this.page = "message"
+                        this.messages.push({
+                            is_sys: true,
+                            text: "对方已连接"
+                        })
+                        console.log("peer open and on connection", conn)
+                        this.messages.push({
+                            is_sys: true,
+                            text: "连接信息:\n\ncurrentLocalDescription\n"
+                                + conn.peerConnection.currentLocalDescription.sdp
+                                + "\n\ncurrentRemoteDescription\n"
+                                + conn.peerConnection.currentRemoteDescription.sdp
+                        })
+                    })
+                    conn.on("data", (data) => {
+                        this.receive_msg(data)
+                    });
+                    conn.on("close", () => {
+                        this.messages.push({
+                            is_sys: true,
+                            text: "对方已断开连接"
+                        })
+                        _scrolldown()
+                    })
+                })
+                peer.on('error', error => {
+                    console.log('error', error)
+                    this.page = "error_conn"
+                    this.error_text = error
+                });
+                let remote_peerid = window.location.hash.substring(1)
+                if (remote_peerid) {
+                    console.log("remote_peerid:", remote_peerid)
+                    // Connect
+                    peer.on("open", id => {
+                        console.log("peer on open", id)
+                        let remote_conn = peer.connect(remote_peerid)
+                        this.connection = remote_conn
+                        remote_conn.on("open", () => {
+                            this.page = "message"
+                            this.messages.push({
+                                is_sys: true,
+                                text: "已连接至对方"
+                            })
+                            console.log("peer open and connect to", remote_conn)
+                            this.messages.push({
+                                is_sys: true,
+                                text: "连接信息:\n\ncurrentLocalDescription\n"
+                                    + remote_conn.peerConnection.currentLocalDescription.sdp
+                                    + "\n\ncurrentRemoteDescription\n"
+                                    + remote_conn.peerConnection.currentRemoteDescription.sdp
+                            })
+                        })
+                        remote_conn.on("data", (data) => {
+                            this.receive_msg(data)
+                        });
+                        remote_conn.on("close", () => {
+                            this.messages.push({
+                                is_sys: true,
+                                text: "对方已断开连接"
+                            })
+                            _scrolldown()
+                        })
+                    })
+                }
+            },
+        })
+
+
+    </script>
+</body>
+
+</html>
