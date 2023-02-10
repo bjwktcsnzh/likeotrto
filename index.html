@@ -9,18 +9,6 @@
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
     <link type="image/png" sizes="16x16" rel="icon" href="./icons8-mouse-face-16.png">
     <style lang="scss" scoped>
-        /* input {
-            font-family: inherit;
-            width: 100%;
-            border: 0;
-            border-bottom: 2px solid gray;
-            outline: 0;
-            font-size: 1.3rem;
-            padding: 7px 0;
-            background: transparent;
-            transition: border-color 0.2s;
-        } */
-
         .messages {
             position: relative;
 
@@ -70,6 +58,11 @@
             box-shadow:
                 0 0 2rem rgba(black, 0.075),
                 0rem 1rem 1rem -1rem rgba(black, 0.1);
+        }
+
+        .msginfo {
+            color: gray;
+            font-size: 50%;
         }
 
         .inputdiv {
@@ -138,8 +131,20 @@
                             <div v-if="m.is_sys" class="sysmsg">
                                 <pre>{{m.text}}</pre>
                             </div>
-                            <div v-else :class="m.is_self?'mymsg':'othermsg'" class="message">
-                                {{m.text}}
+                            <div v-else>
+                                <div :class="m.is_self?'mymsg':'othermsg'" class="message">
+                                    {{m.text}}
+                                    <div class="msginfo">{{'at '+yyyymmddhhmmss(m.time)}}</div>
+                                    <div v-if="m.is_self" class="msginfo">
+                                        <div v-if="ack_list.includes(m.time)" style="color:green">
+                                            已收到
+                                        </div>
+                                        <div v-else>
+                                            未收到...
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
 
@@ -190,6 +195,7 @@
                 error_text: "",
                 messages: [],
                 connection: null,
+                ack_list: []
             },
             computed: {
                 shared_link: function () {
@@ -197,14 +203,35 @@
                 },
             },
             methods: {
+                yyyymmddhhmmss: function (tiemstamp) {
+                    function pad2(n) { return n < 10 ? '0' + n : n }
+
+                    let date = new Date(tiemstamp)
+                    return date.getFullYear().toString()
+                        + "."
+                        + pad2(date.getMonth() + 1)
+                        + "."
+                        + pad2(date.getDate())
+                        + " "
+                        + pad2(date.getHours())
+                        + ":"
+                        + pad2(date.getMinutes())
+                        + ":"
+                        + pad2(date.getSeconds())
+                },
                 send_text: function () {
                     if (!this.text_to_send) {
                         return
                     }
                     let msg = {
-                        text: this.text_to_send
+                        text: this.text_to_send,
+                        time: Date.now(),
                     }
-                    this.connection.send(JSON.stringify(msg))
+                    if (this.connection) {
+                        this.connection.send(JSON.stringify(msg))
+                    } else {
+                        console.error("missing this.connection", this.connection)
+                    }
                     this.messages.push({
                         ...msg,
                         is_self: true,
@@ -213,8 +240,18 @@
                     _scrolldown()
                 },
                 receive_msg: function (data) {
-                    this.messages.push(JSON.parse(data))
-                    _scrolldown()
+                    let d = JSON.parse(data)
+                    if (d.ack) {
+                        this.ack_list.push(d.ack)
+                    } else {
+                        this.messages.push(d)
+                        _scrolldown()
+                        if (d.time) {
+                            this.connection.send(JSON.stringify({
+                                ack: d.time
+                            }))
+                        }
+                    }
                 }
             },
             created: function () {
@@ -255,7 +292,7 @@
                     conn.on("close", () => {
                         this.messages.push({
                             is_sys: true,
-                            text: "对方已断开连接"
+                            text: "对方失去了连接"
                         })
                         _scrolldown()
                     })
@@ -294,7 +331,7 @@
                         remote_conn.on("close", () => {
                             this.messages.push({
                                 is_sys: true,
-                                text: "对方已断开连接"
+                                text: "对方失去了连接"
                             })
                             _scrolldown()
                         })
