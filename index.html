@@ -287,6 +287,9 @@
                 });
                 // Receive
                 peer.on("connection", conn => {
+                    window.onunload = function () {
+                        peer.disconnect()
+                    }
                     this.connection = conn
                     conn.on("open", () => {
                         this.page = "message"
