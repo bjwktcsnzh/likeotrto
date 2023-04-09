@@ -127,7 +127,6 @@
                                     {{(!show_qrcode?"展示":"隐藏")+"二维码"}}
                                 </v-btn>
                             </v-card-actions>
-                            <image id="qrcode" v-show="show_qrcode"></image>
                         </v-card>
                         <p style="margin-top: 20px">然后留在该页面等待对方连接。</p>
                     </div>
@@ -167,6 +166,7 @@
                         </div>
                     </div>
                 </v-container>
+                <image id="qrcode" v-show="show_qrcode"></image>
                 <v-footer v-if="page!='message'">
                     <v-col>
                         <p>
@@ -184,7 +184,7 @@
             </v-main>
         </v-app>
     </div>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
