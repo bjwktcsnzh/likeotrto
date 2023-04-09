@@ -123,7 +123,11 @@
                                     @click="window.open(shared_link)">
                                     新标签页打开链接
                                 </v-btn>
+                                <v-btn @click="show_qrcode=!show_qrcode">
+                                    {{(!show_qrcode?"展示":"隐藏")+"二维码"}}
+                                </v-btn>
                             </v-card-actions>
+                            <image id="qrcode" v-show="show_qrcode"></image>
                         </v-card>
                         <p style="margin-top: 20px">然后留在该页面等待对方连接。</p>
                     </div>
@@ -184,6 +188,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script>
         window.onhashchange = function () {
             window.location.reload()
@@ -195,6 +200,7 @@
             data: {
                 page: "loading", // "loading" | "index" | "message" | "error_conn"
                 peerid: "",
+                show_qrcode: false,
                 text_to_send: "",
                 error_text: "",
                 messages: [],
@@ -285,11 +291,18 @@
                         ]
                     }
                 });
+                // init QRCode
+                QRCode.toDataURL(this.shared_link)
+                    .then(url => {
+                        document.getElementById("qrcode").src = url
+                    })
+                    .catch(err => {
+                        console.error(err)
+                        this.page = "error_conn"
+                        this.error_text = err
+                    })
                 // Receive
                 peer.on("connection", conn => {
-                    window.onunload = function () {
-                        peer.disconnect()
-                    }
                     this.connection = conn
                     conn.on("open", () => {
                         this.page = "message"
