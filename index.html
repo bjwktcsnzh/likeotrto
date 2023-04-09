@@ -123,10 +123,11 @@
                                     @click="window.open(shared_link)">
                                     新标签页打开链接
                                 </v-btn>
-                                <v-btn @click="show_qrcode=!show_qrcode">
+                                <v-btn @click="change_qrcode">
                                     {{(!show_qrcode?"展示":"隐藏")+"二维码"}}
                                 </v-btn>
                             </v-card-actions>
+                            <image id="qrcode" v-if="show_qrcode"></image>
                         </v-card>
                         <p style="margin-top: 20px">然后留在该页面等待对方连接。</p>
                     </div>
@@ -166,7 +167,6 @@
                         </div>
                     </div>
                 </v-container>
-                <image id="qrcode" v-show="show_qrcode"></image>
                 <v-footer v-if="page!='message'">
                     <v-col>
                         <p>
@@ -184,7 +184,7 @@
             </v-main>
         </v-app>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -275,6 +275,20 @@
                             + "\n\n【currentRemoteDescription】\n"
                             + conn.peerConnection.currentRemoteDescription.sdp
                     })
+                },
+                change_qrcode() {
+                    this.show_qrcode = !this.show_qrcode
+                    if (this.show_qrcode) {
+                        this.$nextTick(async () => {
+                            try {
+                                document.getElementById("qrcode").src = await QRCode.toDataURL(this.shared_link)
+                            } catch (err) {
+                                console.error(err)
+                                this.page = "error_conn"
+                                this.error_text = err
+                            }
+                        })
+                    }
                 }
             },
             created: function () {
@@ -291,16 +305,6 @@
                         ]
                     }
                 });
-                // init QRCode
-                QRCode.toDataURL(this.shared_link)
-                    .then(url => {
-                        document.getElementById("qrcode").src = url
-                    })
-                    .catch(err => {
-                        console.error(err)
-                        this.page = "error_conn"
-                        this.error_text = err
-                    })
                 // Receive
                 peer.on("connection", conn => {
                     this.connection = conn
