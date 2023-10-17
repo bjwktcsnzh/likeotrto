@@ -300,8 +300,13 @@
                 let peer = new Peer(peerid, {
                     config: {
                         iceServers: [
-                            { urls: 'stun:42.192.138.156:3478' },
-                            { urls: 'turn:42.192.138.156:3478', username: "likeotrto", credential: "otrtolike" },
+                            // { urls: 'stun:42.192.138.156:3478' },
+                            // { urls: 'turn:42.192.138.156:3478', username: "likeotrto", credential: "otrtolike" },
+                            // Sorry, if it offends you I will delete it immediately
+                            {urls: 'stun:46.165.240.76:3478'},
+                            {urls: 'stun:108.61.211.199:3478'},
+                            {urls: 'turn:46.165.240.76:3478', credential: 'asperTinO1', username: 'otrto'},
+                            {urls: 'turn:108.61.211.199:3478', credential: 'asperTinO1', username: 'otrto'}
                         ]
                     }
                 });
